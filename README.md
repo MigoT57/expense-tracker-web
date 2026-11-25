@@ -1,63 +1,54 @@
 # Ledger — Expense Tracker
 
-A simple expense tracker that runs entirely in your browser. No sign-up, no server, no install.
+A simple expense tracker that runs in your web browser. You can record your income and expenses and see where your money goes, with no installation needed.
 
-**Live demo:** https://YOUR-USERNAME.github.io/expense-tracker/
+**Try it here:** https://migot57.github.io/expense-tracker-web/
 
 ## Features
 
-- Simple local accounts (username + password, no email) with log out, so several people can share one computer and keep their entries separate
-- Add, edit, and delete income and expense transactions
-- Dashboard with balance, monthly income, and monthly spending
-- Charts: spending by category, income vs. expenses, and balance trend
-- Export your data to a JSON file and import it back (backup / move to another device)
-- Works on desktop and mobile
+- Create an account with a username and password (no email needed) and log out
+- Add, edit, and delete income and expenses
+- Dashboard showing your balance, monthly income, and monthly spending
+- Charts for spending by category, income vs. expenses, and balance trend
+- Export your data as a backup file and import it back later
+- Works on both phone and computer
 
-## Accounts and your data
+## How to use
 
-Accounts are stored in your browser, on your own device. There is no server and no email, and nothing is uploaded anywhere.
+1. Open the link above.
+2. Create an account (the first time) or log in.
+3. Add your income and expenses using the form.
+4. Check the dashboard and charts to see your spending.
+5. Click **Export** once in a while to save a backup of your data.
 
-- The first time you open the app you create an account. After that you log in with your username and password.
-- Each account has its own separate transactions, so people sharing a computer don't see each other's entries.
-- Passwords are salted and hashed (PBKDF2) before being saved, never stored as plain text.
-- **This is not encryption.** The login keeps accounts separate and shows who is using the app. Someone with full access to the browser's files or developer tools could still read the saved data.
-- **Passwords can't be recovered**, because there is no email. If you forget one, use **Forgot password?** on the login screen to delete that account and its data, then create it again.
-- Data does **not** sync between devices or browsers, and clearing your browser data erases it.
-- Use **Export** regularly to back up the current account to a JSON file, and **Import** to restore it.
+## Important notes
 
-## Run it locally
+- Your data is saved **only in your own browser**. Nothing is uploaded to any server.
+- Each account has its own separate data, so people sharing one computer won't see each other's entries.
+- The login keeps accounts separate, but it is **not encryption**, so don't treat it as a secure vault.
+- If you forget your password, it **can't be recovered**. Use "Forgot password?" on the login page to delete that account and start again.
+- Data does not sync between devices or browsers, and clearing your browser data will erase it. This is why the **Export** button is useful.
 
-No build step. Either open `index.html` in your browser, or serve the folder:
+## Run it on your computer
 
-```bash
-python -m http.server 8080
-```
+1. Click **Code → Download ZIP** on this page and unzip it.
+2. Double-click `index.html` to open it in your browser.
 
-then visit http://localhost:8080.
-
-## Host it free on GitHub Pages
-
-1. Push this project to a GitHub repository.
-2. In the repo, go to **Settings → Pages**.
-3. Under **Build and deployment**, set **Source** to **Deploy from a branch**.
-4. Choose branch **main** and folder **/ (root)**, then click **Save**.
-5. Wait a minute or two. Your site will be live at `https://YOUR-USERNAME.github.io/REPO-NAME/`.
-
-## Project structure
+## Project files
 
 ```
-index.html        The app page
-css/style.css     Styles
-js/auth.js        Local accounts: sign up, log in, log out
-js/storage.js     Saves and calculates each account's data in the browser
+index.html        Main page
+css/style.css     Styling
+js/auth.js        Accounts (sign up, log in, log out)
+js/storage.js     Saves each account's data in the browser
 js/app.js         Dashboard, form, and charts
-js/vendor/        Chart.js (bundled, works offline)
+js/vendor/        Chart.js library
 ```
 
-## Tech
+## Built with
 
-Plain HTML, CSS, and JavaScript. Charts by [Chart.js](https://www.chartjs.org/). No frameworks or build tools.
+HTML, CSS, and JavaScript, with [Chart.js](https://www.chartjs.org/) for the charts.
 
-## License
+---
 
-MIT
+Developed by MigoT57
