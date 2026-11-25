@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Ledger — Expense Tracker</title>
+<title>Expense Tracker</title>
 <meta name="description" content="A simple expense tracker that runs entirely in your browser. No sign-up, no server." />
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23C9A860'/%3E%3Ctext x='50' y='68' font-size='58' font-family='Arial' font-weight='700' text-anchor='middle' fill='%2312181B'%3EL%3C/text%3E%3C/svg%3E" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%23C9A860'/%3E%3Ctext x='50' y='68' font-size='58' font-family='Arial' font-weight='700' text-anchor='middle' fill='%2312181B'%3EE%3C/text%3E%3C/svg%3E" />
 <link rel="stylesheet" href="css/style.css" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
   <!-- Sign in / create account -->
   <section class="auth-view" id="auth-view" hidden>
     <div class="auth-card">
-      <div class="auth-brand"><span>Ledger</span><span class="mark">01</span></div>
+      <div class="auth-brand"><span>Expense Tracker</span></div>
       <h1 id="auth-title">Welcome back</h1>
       <p class="auth-subtitle" id="auth-sub">Log in to see where your money went.</p>
 
@@ -58,7 +58,7 @@
   <div id="app-view" hidden>
   <header class="app-header">
     <div class="header-inner">
-      <div class="app-brand"><span>Ledger</span><span class="mark">01</span></div>
+      <div class="app-brand"><span>Expense Tracker</span></div>
       <div class="header-right">
         <span class="user-chip" title="Signed in account"><span class="user-label">Signed in as </span><span id="user-name"></span></span>
         <button id="logout-btn" class="btn-ghost">Log out</button>
@@ -68,15 +68,13 @@
 
   <main class="container">
 
-    <div class="storage-notice" id="storage-notice">
-      <span id="storage-notice-text">Saved only in this browser, under this account — nothing is uploaded. Back it up regularly.</span>
-      <span class="notice-actions">
-        <button id="export-btn" class="btn-ghost" title="Download a backup of this account's data">Export</button>
-        <button id="import-btn" class="btn-ghost" title="Restore from a backup file">Import</button>
-        <button id="reset-btn" class="btn-ghost" title="Delete all of this account's transactions">Reset</button>
-        <input type="file" id="import-file" accept=".json,application/json" hidden />
-      </span>
+    <div class="toolbar">
+      <button id="export-btn" class="btn-ghost" title="Download a backup of this account's data">Export</button>
+      <button id="import-btn" class="btn-ghost" title="Restore from a backup file">Import</button>
+      <button id="reset-btn" class="btn-ghost" title="Delete all of this account's transactions">Reset</button>
+      <input type="file" id="import-file" accept=".json,application/json" hidden />
     </div>
+    <p class="form-error" id="storage-warning" hidden>Your browser is blocking storage, so accounts and entries will be lost when you close this tab.</p>
 
     <section class="stats-row" aria-label="Account summary">
       <div class="stat-card">
@@ -107,6 +105,7 @@
           <canvas id="trend-chart"></canvas>
           <p class="chart-empty" id="trend-chart-empty" hidden>No data yet.</p>
         </div>
+        <p class="chart-note">Expense categories first, then income.</p>
       </div>
       <div class="chart-card">
         <h2>Balance trend</h2>
@@ -157,9 +156,9 @@
       </form>
     </section>
 
-    <section class="ledger-panel" aria-label="Recent transactions">
+    <section class="entries-panel" aria-label="Recent transactions">
       <h2>Recent transactions</h2>
-      <ul class="ledger-list" id="ledger-list"></ul>
+      <ul class="entry-list" id="entry-list"></ul>
     </section>
 
   </main>

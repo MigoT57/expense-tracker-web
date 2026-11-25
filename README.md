@@ -1,4 +1,4 @@
-# Ledger — Expense Tracker
+# Expense Tracker
 
 A simple expense tracker that runs in your web browser. You can record your income and expenses and see where your money goes, with no installation needed.
 
@@ -51,4 +51,4 @@ HTML, CSS, and JavaScript, with [Chart.js](https://www.chartjs.org/) for the cha
 
 ---
 
-Developed by MigoT57
+Developed by Migo

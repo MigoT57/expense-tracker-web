@@ -1,51 +1,71 @@
 // js/app.js
 // Drives the sign-in screen and the dashboard: reads the signed-in account's
 // transactions from browser storage (see storage.js and auth.js), renders the
-// ledger list, and keeps the charts in sync whenever a transaction changes.
+// list of entries, and keeps the charts in sync whenever a transaction changes.
 
 const EXPENSE_CATEGORIES = ['Food', 'Transport', 'Housing', 'Utilities', 'Entertainment', 'Health', 'Shopping', 'Other'];
 const INCOME_CATEGORIES = ['Salary', 'Freelance', 'Investment', 'Gift', 'Other'];
 
-// Expense categories: darker, muted tones (money going out — "costly" but not
-// alarming) that still nod to what each category represents.
-const EXPENSE_CATEGORY_COLORS = {
-  Food: '#ff5816',        // warm rust/burnt-orange — appetite association
-  Transport: '#bc81ff',   // steel blue — roads/transit signage
-  Housing: '#ffc080',     // brown/tan — wood, home
-  Utilities: '#f4c14d',   // muted amber — electricity/light
-  Entertainment: '#ff2c2c', // muted purple — playful, nightlife
-  Health: '#3ae47e',      // medical green — pharmacy/cross association
-  Shopping: '#3d88d3',    // dark navy — department-store branding (e.g. SM)
-  Other: '#8b8b8b',       // neutral gray
+// Every category gets its own hue from the colour wheel, with no hue used twice.
+// Saturation and lightness are kept low so the colours stay soft on the dark
+// background. Expense hues sit 45 degrees apart; income hues fall in the gaps.
+const EXPENSE_HUES = {
+  Food: 12,
+  Utilities: 57,
+  Housing: 102,
+  Health: 147,
+  Transport: 192,
+  Shopping: 237,
+  Entertainment: 282,
+  Other: 327,
 };
 
-// Income categories: brighter, more saturated tones (money coming in — "good").
-const INCOME_CATEGORY_COLORS = {
-  Salary: '#11ff00',      // bright green — steady, dependable
-  Freelance: '#00fff7',   // bright teal/cyan
-  Investment: '#ffb700',  // bright gold — growth/wealth
-  Gift: '#ff006a',        // bright pink — festive
-  Other: '#5FB8E8',       // bright sky blue
+const INCOME_HUES = {
+  Salary: 34,
+  Freelance: 124,
+  Other: 169,
+  Investment: 214,
+  Gift: 304,
 };
 
-// Fallback palette for any category name outside the lists above.
-const FALLBACK_COLORS = ['#C9A860', '#4A8B8B', '#A67C9A', '#8A9298', '#D9B95F', '#5B7C99'];
-let fallbackIndex = 0;
-const fallbackColorMap = new Map();
+const wheelColor = (hue, type) =>
+  type === 'income' ? `hsl(${hue}, 48%, 60%)` : `hsl(${hue}, 46%, 52%)`;
 
-// Looks up a category's semantic color by name + transaction type, falling
-// back to a rotating palette for anything unrecognized (e.g. old data from
-// before this category list existed).
+// Categories that are not in the lists above (for example from an imported
+// file) get their own hue too, stepping around the wheel by the golden angle.
+const extraHues = new Map();
+
 function getCategoryColor(name, type) {
-  const map = type === 'income' ? INCOME_CATEGORY_COLORS : EXPENSE_CATEGORY_COLORS;
-  if (map[name]) return map[name];
+  const hues = type === 'income' ? INCOME_HUES : EXPENSE_HUES;
+  if (hues[name] !== undefined) return wheelColor(hues[name], type);
 
-  if (!fallbackColorMap.has(name)) {
-    fallbackColorMap.set(name, FALLBACK_COLORS[fallbackIndex % FALLBACK_COLORS.length]);
-    fallbackIndex += 1;
-  }
-  return fallbackColorMap.get(name);
+  const key = `${type}:${name}`;
+  if (!extraHues.has(key)) extraHues.set(key, (extraHues.size * 137.5 + 20) % 360);
+  return wheelColor(Math.round(extraHues.get(key)), type);
 }
+
+// Percentages (to 0.1%) that always add up to exactly 100, using the
+// largest-remainder method so rounding never leaves 99.9% or 100.1%.
+function percentages(values) {
+  const total = values.reduce((sum, v) => sum + v, 0);
+  if (!total) return values.map(() => 0);
+
+  const tenths = values.map((v) => (v / total) * 1000);
+  const result = tenths.map(Math.floor);
+  let missing = 1000 - result.reduce((sum, v) => sum + v, 0);
+
+  tenths
+    .map((v, i) => ({ i, remainder: v - Math.floor(v) }))
+    .sort((x, y) => y.remainder - x.remainder)
+    .slice(0, missing)
+    .forEach(({ i }) => { result[i] += 1; });
+
+  return result.map((v) => v / 10);
+}
+
+// Chart.js defaults: light text and a font stack with proper fallbacks.
+Chart.defaults.color = '#ffffff';
+Chart.defaults.font.family = "'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
 
 const state = {
   editingId: null,
@@ -62,10 +82,7 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('logout-btn').addEventListener('click', handleLogout);
 
   if (!store.persistent) {
-    const notice = document.getElementById('storage-notice');
-    document.getElementById('storage-notice-text').textContent =
-      'Your browser is blocking storage, so accounts and entries will be lost when you close this tab.';
-    notice.classList.add('warning');
+    document.getElementById('storage-warning').hidden = false;
   }
 
   const user = auth.currentUser();
@@ -204,7 +221,7 @@ function handleLogout() {
   // Charts are rebuilt for whoever signs in next.
   [categoryChart, trendChart, balanceLineChart].forEach((c) => c && c.destroy());
   categoryChart = trendChart = balanceLineChart = null;
-  document.getElementById('ledger-list').innerHTML = '';
+  document.getElementById('entry-list').innerHTML = '';
 
   showAuth('login');
 }
@@ -219,7 +236,7 @@ function setupBackupButtons() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `ledger-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = `expense-tracker-backup-${new Date().toISOString().slice(0, 10)}.json`;
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -267,41 +284,41 @@ function loadSummary() {
   }
 }
 
-// --- Transaction ledger --------------------------------------------------------
+// --- Transaction list --------------------------------------------------------
 
 function loadTransactions() {
-  const list = document.getElementById('ledger-list');
+  const list = document.getElementById('entry-list');
 
   try {
     const data = store.list(50);
     if (data.length === 0) {
-      list.innerHTML = '<li class="ledger-empty">No entries yet. Add your first transaction above.</li>';
+      list.innerHTML = '<li class="entry-empty">No entries yet. Add your first transaction above.</li>';
       return;
     }
 
     list.innerHTML = '';
-    data.forEach((tx) => list.appendChild(renderLedgerRow(tx)));
+    data.forEach((tx) => list.appendChild(renderEntryRow(tx)));
   } catch (err) {
-    list.innerHTML = `<li class="ledger-empty">Could not load transactions: ${escapeHtml(err.message)}</li>`;
+    list.innerHTML = `<li class="entry-empty">Could not load transactions: ${escapeHtml(err.message)}</li>`;
   }
 }
 
-function renderLedgerRow(tx) {
+function renderEntryRow(tx) {
   const li = document.createElement('li');
-  li.className = 'ledger-row';
+  li.className = 'entry-row';
   li.dataset.id = tx.id;
 
   const sign = tx.type === 'income' ? '+' : '−';
   const amountClass = tx.type === 'income' ? 'amount-income' : 'amount-expense';
 
   li.innerHTML = `
-    <div class="ledger-date">${formatDate(tx.date)}</div>
-    <div class="ledger-details">
-      <span class="ledger-category">${escapeHtml(tx.category)}</span>
-      ${tx.note ? `<span class="ledger-note">${escapeHtml(tx.note)}</span>` : ''}
+    <div class="entry-date">${formatDate(tx.date)}</div>
+    <div class="entry-details">
+      <span class="entry-category">${escapeHtml(tx.category)}</span>
+      ${tx.note ? `<span class="entry-note">${escapeHtml(tx.note)}</span>` : ''}
     </div>
-    <div class="ledger-amount ${amountClass}">${sign} ${formatCurrency(tx.amount)}</div>
-    <div class="ledger-actions">
+    <div class="entry-amount ${amountClass}">${sign} ${formatCurrency(tx.amount)}</div>
+    <div class="entry-actions">
       <button class="icon-btn" data-action="edit" title="Edit">Edit</button>
       <button class="icon-btn icon-btn-danger" data-action="delete" title="Delete">Delete</button>
     </div>
@@ -419,21 +436,20 @@ function handleFormSubmit(event) {
 
 // --- Charts ----------------------------------------------------------------------
 
+const GRID_COLOR = 'rgba(237, 235, 228, 0.08)';
+const TICK_COLOR = '#8A9298';
+
+function showChartEmpty(chart, emptyId, isEmpty) {
+  document.getElementById(emptyId).hidden = !isEmpty;
+  if (isEmpty && chart) chart.destroy();
+  return isEmpty ? null : chart;
+}
+
 function loadCategoryChart() {
   try {
     const data = store.byCategory('expense');
-    const ctx = document.getElementById('category-chart').getContext('2d');
-    const empty = document.getElementById('category-chart-empty');
-
-    if (data.length === 0) {
-      empty.hidden = false;
-      if (categoryChart) {
-        categoryChart.destroy();
-        categoryChart = null;
-      }
-      return;
-    }
-    empty.hidden = true;
+    categoryChart = showChartEmpty(categoryChart, 'category-chart-empty', data.length === 0);
+    if (data.length === 0) return;
 
     const chartData = {
       labels: data.map((d) => d.category),
@@ -445,55 +461,53 @@ function loadCategoryChart() {
       }],
     };
 
-    const grandTotal = data.reduce((sum, d) => sum + d.total, 0);
-
     if (categoryChart) {
       categoryChart.data = chartData;
       categoryChart.update();
-    } else {
-      categoryChart = new Chart(ctx, {
-        type: 'pie',
-        data: chartData,
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: {
-                color: '#ffffff',
-                font: { family: 'Manrope', size: 12 },
-                boxWidth: 12,
-                padding: 14,
-                // Appends a percentage to each legend entry (e.g. "Food 2%") so a
-                // category is still identifiable even when its slice is a sliver
-                // next to a much larger one.
-                generateLabels(chart) {
-                  const values = chart.data.datasets[0].data;
-                  return chart.data.labels.map((label, i) => {
-                    const pct = grandTotal ? Math.round((values[i] / grandTotal) * 100) : 0;
-                    return {
-                      text: `${label} (${pct}%)`,
-                      fillStyle: chart.data.datasets[0].backgroundColor[i],
-                      strokeStyle: '#1B2328',
-                      index: i,
-                    };
-                  });
-                },
+      return;
+    }
+
+    categoryChart = new Chart(document.getElementById('category-chart').getContext('2d'), {
+      type: 'pie',
+      data: chartData,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: '#ffffff',
+              font: { size: 12 },
+              boxWidth: 12,
+              padding: 14,
+              // Reads the chart's CURRENT data every time, so the percentages
+              // stay correct as transactions are added, edited or deleted.
+              generateLabels(chart) {
+                const dataset = chart.data.datasets[0];
+                const shares = percentages(dataset.data);
+                return chart.data.labels.map((label, i) => ({
+                  text: `${label} (${shares[i].toFixed(1)}%)`,
+                  fillStyle: dataset.backgroundColor[i],
+                  strokeStyle: dataset.borderColor,
+                  fontColor: '#ffffff',
+                  hidden: !chart.getDataVisibility(i),
+                  index: i,
+                }));
               },
             },
-            tooltip: {
-              callbacks: {
-                label(ctx) {
-                  const pct = grandTotal ? Math.round((ctx.parsed / grandTotal) * 100) : 0;
-                  return `${ctx.label}: ${formatCurrency(ctx.parsed)} (${pct}%)`;
-                },
+          },
+          tooltip: {
+            callbacks: {
+              label(ctx) {
+                const shares = percentages(ctx.dataset.data);
+                return `${ctx.label}: ${formatCurrency(ctx.parsed)} (${shares[ctx.dataIndex].toFixed(1)}%)`;
               },
             },
           },
         },
-      });
-    }
+      },
+    });
   } catch (err) {
     console.error('Failed to load category chart', err);
   }
@@ -501,82 +515,65 @@ function loadCategoryChart() {
 
 function loadTrendChart() {
   try {
-    // Same data as the pie chart, but unfiltered — returns both income and
-    // expense rows so the bar chart can show every category side by side.
-    const data = store.byCategory();
-    const ctx = document.getElementById('trend-chart').getContext('2d');
-    const empty = document.getElementById('trend-chart-empty');
+    // One bar per category: expense categories first, then income categories.
+    const rows = store.byCategory();
+    trendChart = showChartEmpty(trendChart, 'trend-chart-empty', rows.length === 0);
+    if (rows.length === 0) return;
 
-    if (data.length === 0) {
-      empty.hidden = false;
-      if (trendChart) {
-        trendChart.destroy();
-        trendChart = null;
-      }
-      return;
-    }
-    empty.hidden = true;
+    const expenseRows = rows.filter((r) => r.type === 'expense');
+    const incomeRows = rows.filter((r) => r.type === 'income');
+    const bars = [...expenseRows, ...incomeRows];
 
-    // Union of every category that has at least one transaction, expense
-    // categories first (to line up visually with the pie chart's order).
-    const expenseRows = data.filter((d) => d.type === 'expense');
-    const incomeRows = data.filter((d) => d.type === 'income');
-    const categories = [
-      ...expenseRows.map((d) => d.category),
-      ...incomeRows.map((d) => d.category).filter((c) => !expenseRows.some((e) => e.category === c)),
-    ];
-
-    const expenseByCategory = Object.fromEntries(expenseRows.map((d) => [d.category, d.total]));
-    const incomeByCategory = Object.fromEntries(incomeRows.map((d) => [d.category, d.total]));
+    // A name used by both types (like "Other") gets the type added so the
+    // two bars can be told apart.
+    const nameCount = {};
+    bars.forEach((r) => { nameCount[r.category] = (nameCount[r.category] || 0) + 1; });
+    const labels = bars.map((r) => (nameCount[r.category] > 1 ? `${r.category} (${r.type})` : r.category));
 
     const chartData = {
-      labels: categories,
-      datasets: [
-        {
-          label: 'Expenses',
-          data: categories.map((c) => expenseByCategory[c] || 0),
-          // Colored per-category to match the pie chart's slice colors directly.
-          backgroundColor: categories.map((c) => getCategoryColor(c, 'expense')),
-          borderRadius: 4,
-        },
-        {
-          label: 'Income',
-          data: categories.map((c) => incomeByCategory[c] || 0),
-          // Each income category also gets its own bright color, rather than one flat green.
-          backgroundColor: categories.map((c) => getCategoryColor(c, 'income')),
-          borderRadius: 4,
-        },
-      ],
+      labels,
+      datasets: [{
+        data: bars.map((r) => r.total),
+        types: bars.map((r) => r.type), // read by the tooltip
+        backgroundColor: bars.map((r) => getCategoryColor(r.category, r.type)),
+        borderRadius: 4,
+        maxBarThickness: 40,
+      }],
     };
-
-    const gridColor = 'rgba(237, 235, 228, 0.08)';
-    const textColor = '#8A9298';
 
     if (trendChart) {
       trendChart.data = chartData;
       trendChart.update();
-    } else {
-      trendChart = new Chart(ctx, {
-        type: 'bar',
-        data: chartData,
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { position: 'bottom', labels: { color: '#EDEBE4', font: { family: 'Manrope', size: 12 } } },
-          },
-          scales: {
-            x: { grid: { display: false }, ticks: { color: textColor, font: { family: 'Manrope', size: 11 } } },
-            y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: 'Manrope', size: 11 } } },
+      return;
+    }
+
+    trendChart = new Chart(document.getElementById('trend-chart').getContext('2d'), {
+      type: 'bar',
+      data: chartData,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label(ctx) {
+                const type = ctx.dataset.types[ctx.dataIndex] === 'income' ? 'Income' : 'Expenses';
+                return `${type}: ${formatCurrency(ctx.parsed.y)}`;
+              },
+            },
           },
         },
-      });
-    }
+        scales: {
+          x: { grid: { display: false }, ticks: { color: TICK_COLOR, font: { size: 11 }, maxRotation: 45 } },
+          y: { grid: { color: GRID_COLOR }, ticks: { color: TICK_COLOR, font: { size: 11 } } },
+        },
+      },
+    });
   } catch (err) {
     console.error('Failed to load trend chart', err);
   }
 }
-
 
 function loadBalanceLineChart() {
   try {
@@ -637,8 +634,8 @@ function loadBalanceLineChart() {
             },
           },
           scales: {
-            x: { grid: { display: false }, ticks: { color: textColor, font: { family: 'Manrope', size: 11 }, maxRotation: 0, autoSkip: true } },
-            y: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: 'Manrope', size: 11 } } },
+            x: { grid: { display: false }, ticks: { color: textColor, font: { size: 11 }, maxRotation: 0, autoSkip: true } },
+            y: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 11 } } },
           },
         },
       });

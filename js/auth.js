@@ -9,8 +9,8 @@
 // or dev tools could still read the saved data. Treat it like a household
 // "who's using the app" switch, not a bank vault.
 
-const USERS_KEY = 'ledger.users.v1';
-const SESSION_KEY = 'ledger.session.v1';
+const USERS_KEY = 'expense-tracker.users.v1';
+const SESSION_KEY = 'expense-tracker.session.v1';
 const PBKDF2_ITERATIONS = 150000;
 
 const auth = (() => {
@@ -130,7 +130,6 @@ const auth = (() => {
         throw new Error('That username is already taken on this device.');
       }
 
-      const first = Object.keys(users).length === 0;
       const salt = toHex(crypto.getRandomValues(new Uint8Array(16)));
       users[key] = {
         username,
@@ -139,9 +138,6 @@ const auth = (() => {
         createdAt: new Date().toISOString(),
       };
       writeUsers(users);
-
-      // Data from the earlier account-less version goes to the very first account.
-      if (first) store.migrateLegacyTo(key);
 
       writeSession(key, remember);
       return { key, username };

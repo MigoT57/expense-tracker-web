@@ -5,17 +5,16 @@
 // code barely changed.
 
 // Each account's transactions are stored under their own key:
-// "ledger.transactions.v1.<username>". (The bare key is what the earlier,
-// account-less version used; the first account created adopts that data.)
-const STORAGE_KEY = 'ledger.transactions.v1';
+// "expense-tracker.transactions.v1.<username>".
+const STORAGE_KEY = 'expense-tracker.transactions.v1';
 
 const store = (() => {
   // Some browsers (private mode, blocked cookies) refuse localStorage. In that
   // case the app still works for the session, but nothing is saved.
   function storageWorks() {
     try {
-      localStorage.setItem('__ledger_test', '1');
-      localStorage.removeItem('__ledger_test');
+      localStorage.setItem('__expense_tracker_test', '1');
+      localStorage.removeItem('__expense_tracker_test');
       return true;
     } catch (e) {
       return false;
@@ -103,20 +102,6 @@ const store = (() => {
     // Choose whose data the other functions use (null = nobody / signed out).
     useUser(key) {
       userKey = key;
-    },
-
-    // Moves data saved by the old account-less version into this account.
-    migrateLegacyTo(key) {
-      if (!persistent) return false;
-      try {
-        const legacy = localStorage.getItem(STORAGE_KEY);
-        if (!legacy) return false;
-        localStorage.setItem(keyFor(key), legacy);
-        localStorage.removeItem(STORAGE_KEY);
-        return true;
-      } catch (e) {
-        return false;
-      }
     },
 
     deleteUserData(key) {
@@ -225,7 +210,7 @@ const store = (() => {
     // --- Backup / restore -----------------------------------------------------
     exportJson() {
       return JSON.stringify(
-        { app: 'ledger', version: 1, exportedAt: new Date().toISOString(), transactions: [...all()].sort(byDateDesc) },
+        { app: 'expense-tracker', version: 1, exportedAt: new Date().toISOString(), transactions: [...all()].sort(byDateDesc) },
         null,
         2
       );

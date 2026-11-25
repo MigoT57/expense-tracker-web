@@ -1,8 +1,6 @@
 /* ============================================================
-   Expense Tracker — "Ledger" design system
-   Palette: deep charcoal-navy surfaces, warm gold + teal accents,
-   coral for outgoing amounts. Numbers set in monospace, like a
-   checkbook register; headings in a characterful serif.
+   Expense Tracker — design system
+   Dark surfaces with warm gold and teal accents; numbers in the body font.
    ============================================================ */
 
 :root {
@@ -27,6 +25,9 @@
 }
 
 * { box-sizing: border-box; }
+
+/* Anything marked hidden stays hidden, whatever display style it has. */
+[hidden] { display: none !important; }
 
 html {
   -webkit-text-size-adjust: 100%;
@@ -60,18 +61,6 @@ button {
 
 /* ---------- Auth pages ---------- */
 
-.auth-page {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  padding: 24px;
-  background:
-    radial-gradient(circle at 15% 10%, rgba(201, 168, 96, 0.08), transparent 40%),
-    radial-gradient(circle at 85% 90%, rgba(74, 139, 139, 0.08), transparent 40%),
-    var(--bg);
-}
-
 .auth-card {
   width: 100%;
   max-width: 400px;
@@ -88,8 +77,6 @@ button {
   gap: 8px;
   margin-bottom: 4px;
 }
-
-.auth-brand .mark { color: var(--gold); font-family: var(--font-mono); font-size: 0.85rem; }
 
 .auth-card h1 {
   font-family: var(--font-display);
@@ -108,17 +95,21 @@ button {
 
 .form-field label {
   display: block;
+  height: 18px;
+  line-height: 18px;
   font-size: 0.82rem;
   color: var(--text-muted);
   margin-bottom: 6px;
   letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .form-field input,
 .form-field select,
 .form-field textarea {
   width: 100%;
-  padding: 11px 13px;
+  height: 44px;
+  padding: 0 13px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: 7px;
@@ -149,13 +140,6 @@ button {
 
 .btn-primary:hover { filter: brightness(1.08); }
 .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.auth-switch {
-  margin-top: 22px;
-  text-align: center;
-  font-size: 0.88rem;
-  color: var(--text-muted);
-}
 
 .form-error {
   background: rgba(193, 85, 74, 0.14);
@@ -192,8 +176,6 @@ button {
   font-weight: 600;
 }
 
-.app-brand .mark { color: var(--gold); font-family: var(--font-mono); font-size: 0.78rem; font-weight: 400; }
-
 .header-right {
   display: flex;
   align-items: center;
@@ -205,26 +187,34 @@ button {
 #user-name { color: var(--text); font-weight: 600; }
 
 .btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 38px;
+  padding: 0 16px;
   background: transparent;
-  border: 1px solid var(--border);
   color: var(--text-muted);
-  padding: 7px 14px;
-  border-radius: 6px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  font-family: var(--font-body);
   font-size: 0.85rem;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
 }
 .btn-ghost:hover { color: var(--text); border-color: var(--text-muted); }
 
 main.container {
   max-width: 1100px;
   margin: 0 auto;
-  padding: 32px 24px 64px;
+  padding: 32px 24px 36px;
 }
 
 /* ---------- Stat cards ---------- */
 
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 32px;
 }
@@ -258,12 +248,13 @@ main.container {
 
 .charts-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 32px;
 }
 
 .chart-card {
+  min-width: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -292,6 +283,13 @@ main.container {
 }
 .chart-empty[hidden] { display: none; }
 
+.chart-note {
+  margin: 12px 0 0;
+  font-size: 0.75rem;
+  text-align: center;
+  color: var(--text-muted);
+}
+
 /* ---------- Transaction form ---------- */
 
 .panel {
@@ -310,10 +308,13 @@ main.container {
 
 .tx-form-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  align-items: end;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  align-items: start;
 }
+
+.tx-form-grid .form-field { margin-bottom: 0; }
+.tx-form-grid .form-error { margin-bottom: 0; }
 
 .tx-form-grid .form-field.span-2 { grid-column: span 2; }
 .tx-form-grid .form-field.span-4 { grid-column: span 4; }
@@ -324,24 +325,24 @@ main.container {
   gap: 10px;
 }
 
-.form-actions .btn-primary { width: auto; padding: 11px 22px; }
+.form-actions .btn-primary { width: auto; height: 42px; padding: 0 24px; }
 
-/* ---------- Ledger list (signature element) ---------- */
+/* ---------- Transaction list ---------- */
 
-.ledger-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.entries-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
 
-.ledger-panel h2 { font-family: var(--font-display); font-size: 1.15rem; margin: 0; padding: 22px 26px 16px; }
+.entries-panel h2 { font-family: var(--font-display); font-size: 1.15rem; margin: 0; padding: 24px 26px 18px; }
 
-.ledger-list {
+.entry-list {
   list-style: none;
   margin: 0;
   padding: 0;
   border-top: 1px solid var(--border);
 }
 
-.ledger-row {
+.entry-row {
   display: grid;
-  grid-template-columns: 110px 1fr 140px 110px;
+  grid-template-columns: 120px minmax(0, 1fr) 150px 132px;
   align-items: center;
   gap: 14px;
   padding: 14px 26px;
@@ -349,9 +350,8 @@ main.container {
   position: relative;
 }
 
-/* the "spine" — a thin rule that visually threads every ledger entry together,
-   like the binding of a physical checkbook register */
-.ledger-row::before {
+/* thin accent bar on the left edge of each row */
+.entry-row::before {
   content: '';
   position: absolute;
   left: 0;
@@ -361,19 +361,18 @@ main.container {
   background: var(--border);
 }
 
-.ledger-row:hover { background: rgba(237, 235, 228, 0.02); }
-.ledger-row:hover::before { background: var(--gold); }
-.ledger-row:last-child { border-bottom: none; }
+.entry-row:hover { background: rgba(237, 235, 228, 0.02); }
+.entry-row:hover::before { background: var(--gold); }
+.entry-row:last-child { border-bottom: none; }
 
-.ledger-date {
-  font-family: var(--font-mono);
-  font-size: 0.78rem;
+.entry-date {
+  font-size: 0.8rem;
   color: var(--text-muted);
 }
 
-.ledger-details { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.ledger-category { font-weight: 600; font-size: 0.92rem; }
-.ledger-note {
+.entry-details { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.entry-category { font-weight: 600; font-size: 0.92rem; }
+.entry-note {
   font-size: 0.8rem;
   color: var(--text-muted);
   overflow: hidden;
@@ -381,7 +380,7 @@ main.container {
   white-space: nowrap;
 }
 
-.ledger-amount {
+.entry-amount {
   font-family: var(--font-mono);
   font-size: 0.95rem;
   text-align: right;
@@ -390,7 +389,7 @@ main.container {
 .amount-income { color: var(--income-green); }
 .amount-expense { color: var(--coral); }
 
-.ledger-actions { display: flex; gap: 8px; justify-content: flex-end; }
+.entry-actions { display: flex; gap: 8px; justify-content: flex-end; }
 
 .icon-btn {
   background: transparent;
@@ -403,7 +402,7 @@ main.container {
 .icon-btn:hover { color: var(--text); border-color: var(--text-muted); }
 .icon-btn-danger:hover { color: var(--coral); border-color: var(--coral); }
 
-.ledger-empty {
+.entry-empty {
   list-style: none;
   padding: 40px 26px;
   text-align: center;
@@ -414,29 +413,25 @@ main.container {
 /* ---------- Footer credit ---------- */
 
 .site-footer {
-  position: fixed;
-  right: 16px;
-  bottom: 10px;
-  font-size: 0.72rem;
+  padding: 0 16px 28px;
+  font-size: 0.78rem;
+  text-align: center;
   color: var(--text-muted);
-  opacity: 0.75;
-  letter-spacing: 0.02em;
-  pointer-events: none;
-  z-index: 5;
+  opacity: 0.8;
 }
 
 /* ---------- Responsive ---------- */
 
 @media (max-width: 860px) {
-  .stats-row { grid-template-columns: 1fr; }
-  .charts-row { grid-template-columns: 1fr; }
+  .stats-row { grid-template-columns: minmax(0, 1fr); }
+  .charts-row { grid-template-columns: minmax(0, 1fr); }
   .tx-form-grid { grid-template-columns: 1fr 1fr; }
   .tx-form-grid .form-field.span-2 { grid-column: span 2; }
   .form-actions { grid-column: span 2; }
-  .ledger-row { grid-template-columns: 90px 1fr 100px; }
-  .ledger-actions { grid-column: 1 / -1; justify-content: flex-start; padding-top: 6px; }
-  .header-inner { padding: 16px 18px; }
-  main.container { padding: 22px 16px 48px; }
+  .entry-row { grid-template-columns: 90px minmax(0, 1fr) 110px; }
+  .entry-actions { grid-column: 1 / -1; justify-content: flex-start; padding-top: 6px; }
+  .header-inner { padding: 16px; }
+  main.container { padding: 22px 16px 28px; }
 }
 
 @media (max-width: 480px) {
@@ -452,9 +447,9 @@ main.container {
   .stat-value { font-size: 1.4rem; }
 
   .chart-card { padding: 16px 18px; }
-  .chart-wrap { height: 200px; }
+  .chart-wrap { height: 280px; }
 
-  .ledger-row {
+  .entry-row {
     grid-template-columns: 1fr auto;
     grid-template-areas:
       "date amount"
@@ -463,42 +458,34 @@ main.container {
     row-gap: 6px;
     padding: 14px 18px;
   }
-  .ledger-date { grid-area: date; }
-  .ledger-amount { grid-area: amount; }
-  .ledger-details { grid-area: details; }
-  .ledger-actions { grid-area: actions; }
+  .entry-date { grid-area: date; }
+  .entry-amount { grid-area: amount; }
+  .entry-details { grid-area: details; }
+  .entry-actions { grid-area: actions; }
 
   .app-brand { font-size: 1.1rem; }
   .header-right { gap: 10px; font-size: 0.82rem; }
 
-  .site-footer { right: 10px; bottom: 8px; font-size: 0.68rem; }
 }
 
 /* --- Browser-only version additions ------------------------------------- */
-.storage-notice {
+.toolbar {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px 16px;
-  margin: 0 0 18px;
-  padding: 10px 14px;
-  font-size: 0.82rem;
-  color: var(--text-muted);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  justify-content: flex-end;
+  gap: 10px;
+  margin-bottom: 20px;
 }
-.storage-notice.warning { color: var(--text); border-color: var(--coral); }
-.notice-actions { display: flex; gap: 8px; }
-.notice-actions .btn-ghost { padding: 5px 12px; font-size: 0.8rem; }
+
+.toolbar .btn-ghost { min-width: 96px; }
+
+#storage-warning { margin-bottom: 20px; }
 
 /* Sign in / create account screen (reuses the .auth-card look) */
 .auth-view {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  min-height: calc(100vh - 64px);
   padding: 24px;
   background:
     radial-gradient(circle at 15% 10%, rgba(201, 168, 96, 0.08), transparent 40%),
@@ -590,5 +577,6 @@ main.container {
 @media (max-width: 480px) {
   .auth-card { padding: 28px 22px; }
   .header-right .user-label { display: none; }
+  .toolbar .btn-ghost { flex: 1; min-width: 0; }
   .header-right #user-name { max-width: 100px; }
 }
